@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Админка</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><span class="nav">Админка</span><span class="logo">Товары</span><a class="nav r" href="/">На сайт</a></header>
+<div class="adm" id="root"></div>
+<dialog id="dlg"></dialog>
+<script>
+const $ = s => document.querySelector(s), root = $('#root'), dlg = $('#dlg');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let products = [];
+
+async function start() {
+  const me = await fetch('/api/me').then(r => r.json());
+  me.admin ? list() : login();
+}
+function login() {
+  root.innerHTML = `<form id="lf" style="max-width:320px;margin:10vh auto"><label>Пароль</label><input type="password" id="pw" autofocus>
+  <div class="err" id="e"></div><button class="btn">Войти</button><p class="small" style="margin-top:12px">Вход нужен один раз — потом устройство запомнится.</p></form>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault();
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('#pw').value }) });
+    r.ok ? list() : $('#e').textContent = (await r.json()).error;
+  };
+}
+async function list() {
+  products = await fetch('/api/products').then(r => r.json());
+  root.innerHTML = `<div class="grid"><button class="plus" id="add" title="Добавить товар">+</button>
+  ${products.map(p => `<a class="card" href="#" data-id="${p.id}"><div class="im">${p.images[0] ? `<img src="/uploads/${p.images[0]}">` : ''}</div>
+  <h3>${esc(p.title)}</h3><span>${p.price ? p.price + ' ₽' : 'без цены'}</span></a>`).join('')}</div>
+  <p class="small" style="margin-top:30px"><a href="#" id="tn" style="text-decoration:underline">Отправить тестовое уведомление в мессенджер</a></p>`;
+  $('#add').onclick = () => edit();
+  root.querySelectorAll('.card').forEach(c => c.onclick = e => { e.preventDefault(); edit(products.find(p => p.id === c.dataset.id)); });
+  $('#tn').onclick = async e => {
+    e.preventDefault(); const r = await fetch('/api/test-notify', { method: 'POST' });
+    alert(r.ok ? 'Отправлено — проверьте мессенджер' : 'Ошибка: ' + (await r.json()).error);
+  };
+}
+function edit(p) {
+  p = p || { title: '', price: '', sizes: '', desc: '', images: [] };
+  let keep = [...p.images], files = [];
+  const draw = () => {
+    dlg.innerHTML = `<form id="pf"><h3>${p.id ? 'Редактировать' : 'Новый товар'}</h3>
+    <label>Фото (первое — обложка; нажмите на фото, чтобы сделать обложкой)</label><div class="thumbs" id="th"></div>
+    <input type="file" id="fi" accept="image/*" multiple>
+    <label>Название</label><input name="title" required value="${esc(p.title)}">
+    <label>Цена, ₽</label><input name="price" type="number" min="0" inputmode="numeric" value="${p.price || ''}">
+    <label>Размеры / варианты (необязательно)</label><input name="sizes" value="${esc(p.sizes)}">
+    <label>Описание</label><textarea name="desc" rows="5">${esc(p.desc)}</textarea>
+    <div class="row"><button class="btn" id="sv">Сохранить</button><button type="button" class="btn ghost" id="cl">Отмена</button></div>
+    ${p.id ? '<p class="small" style="margin-top:14px"><a href="#" id="del" style="color:#b3261e">Удалить товар</a></p>' : ''}</form>`;
+    $('#th').innerHTML = keep.map((n, i) => `<div class="th ${i ? '' : 'cover'}" data-n="${n}"><img src="/uploads/${n}"><b data-x="${n}">×</b></div>`).join('')
+      + files.map(f => `<div class="th"><img src="${URL.createObjectURL(f)}"></div>`).join('');
+    $('#th').onclick = e => {
+      const x = e.target.dataset.x, t = e.target.closest('.th[data-n]');
+      if (x) keep = keep.filter(n => n !== x); else if (t) keep = [t.dataset.n, ...keep.filter(n => n !== t.dataset.n)];
+      keepForm(); draw();
+    };
+    $('#fi').onchange = e => { files.push(...e.target.files); keepForm(); draw(); };
+    $('#cl').onclick = () => dlg.close();
+    if ($('#del')) $('#del').onclick = async e => { e.preventDefault(); if (confirm('Удалить товар?')) { await fetch('/api/products/' + p.id, { method: 'DELETE' }); dlg.close(); list(); } };
+    $('#pf').onsubmit = async e => {
+      e.preventDefault(); $('#sv').disabled = true; $('#sv').textContent = 'Сохраняю…';
+      const fd = new FormData(e.target); fd.delete('');
+      files.forEach(f => fd.append('images', f)); fd.append('keep', JSON.stringify(keep));
+      const r = await fetch(p.id ? '/api/products/' + p.id : '/api/products', { method: p.id ? 'PUT' : 'POST', body: fd });
+      if (r.ok) { dlg.close(); list(); } else { alert((await r.json()).error || 'Ошибка'); $('#sv').disabled = false; $('#sv').textContent = 'Сохранить'; }
+    };
+  };
+  const keepForm = () => { const f = $('#pf'); if (f) { const d = new FormData(f); p = { ...p, title: d.get('title'), price: d.get('price'), sizes: d.get('sizes'), desc: d.get('desc') }; } };
+  draw(); dlg.showModal();
+}
+start();
+</script></body></html>
