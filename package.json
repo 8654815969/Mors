@@ -1,14 +1,13 @@
 {
-  "name": "leather-shop",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": { "start": "node server.js", "max-id": "node scripts/get-max-id.js" },
-  "engines": { "node": ">=18" },
-  "dependencies": {
-    "@fontsource/jost": "^5.0.0",
-    "firebase-admin": "^12.6.0",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1",
-    "sharp": "^0.33.5"
-  }
+  "type": "service_account",
+  "project_id": "moris-c3bbc",
+  "private_key_id": "68983c02bba92f6dadaedab591efda55214e3cc3",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQD0pZ9l62Q+f11y\n+eCzm8h2fUWN9qKnIOlisGaUdIgB+blOqOeP5wXWKXOb8YWIrwHLuTmhMaqT+P4m\nh7OjL2bRxqlBSipPfoHmEs0QI8kAt5Sa2mNMCZvIYrByMMq/TURHyhf7dEKukqop\nL0uwuDGy9CsLk36LJgVb7lMWt8qtPLREROpcUY9GQd5MP7/0SKLc0mCXyYiohtK3\nfU1YUl21iIlubIO4gQ+EZetJr5mzWTsdAgNB2W/YvMCcCJZeL8w6jnbLuVRx6tEU\nb7DyudUdyp3S2vN+EGPq+wEcJNpjwpD8XGKL7INKFsvo+nsazxtP2Wi0TRBSOp6W\norRUu+JdAgMBAAECggEAd1Rj1ARFoKBiVgcg/aqSVI1VBGJVQvzwKbWOS4Itpv0G\nUKJdVJkkhSox3FIpxppKX3Lo88G0iLmuSd/uFL41wkPK4fBJg/3aYX0xLdqum91v\nrDqyrW+QX2UX2JMJCden4vZlzT6PmfQq8KzDmB64CyhC6MIYOsogWg980rtyLh3W\nTBMH12mDWmll6gTXGFb0UE0lyx9LtOIBKP4E3ijp6VVcDM/N1LScGlQkUByJ01Ew\nBgfNBEp2qxGrCLvdlfz5lc3dG3gd+2Xp596R0sC7AxGxQJs1flP3v4VzW7coRiJN\nxZeXKn51wDywsWw7T7bGfxvJx/hhm45cDGDxVeASxwKBgQD96NZ4CYdBAVBEeqsc\nHPuLv2SMdEv5a3DMvXCI3UDc0VH43+/7/PCXDuRYBI/tzOeqiE7pNrQUiyy3Sl6J\ns8/aACwM8FbgCC+MH1hguvamo2AYLv1IvH3tzLjJ9xxwIgSFATnePf7Efso/NS4F\nrwUCO5wi7ndy9lbZz+74W4JDkwKBgQD2qUMlWvOz9NRynkjujL8nCJhz2QD3agwi\n+6+nt5n7VnFLiv/9nbKSX+fURaQ18ykrldu1NpdwvsMwaq3jDh1eL9VzXUAw9lfz\nch9Fqw8G3s22F6nWAU+npGKurzm07bvabxfkQZUvxlu65dXtPSn3+Sw4NmgwAD78\nwLxkxIfYTwKBgQDqgszjXVmQzpfGR84WTyZ9si46E4fAPF2YnDd+EWxBBwvA44QR\np1LHEjgQm1Yb+q7VsMPBXocAmnKYb5XVdUA6RwJoiOqUTLstnh3QaZ451peAfpXt\nQjrFEdpyn0uivaiS98js3TGbZseBjaqOEVJ893WEReAJTEB3ODetJ0evBQKBgQCr\niLpxV/byxuiXbQw7GRY2Bvw+VEMfzFf0XCOj90LWTx8q8ddkgC6XLKsELAoumpOf\nA/Bu7TAT8BW9rfKPXFmADrPaLpdddXNkkZC92l/w3zEf2QT7Fp5WbzNRV/pBoLJr\nDacHzbP6LW/NYdiLy2VMVbQyw2NhPkqPa1mYmjP+cQKBgBYlKT0fnex9J7a2X85q\n9rValmw17PX8zrMaYL7S4Nz6OrW+2tNG752OsNWH972C8CphXSvaNS9wLNnA+O2o\nHgi8FQ3CqiRnPTUhycu+P8vlfHK08uiSOPDhDBQa8mjBvhU/B9UgBM/6sLbg/aTb\n7FMxiiZrCKzSWfB1Iu4CTEYJ\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@moris-c3bbc.iam.gserviceaccount.com",
+  "client_id": "115519070158954358850",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40moris-c3bbc.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
 }
