@@ -1,13 +1,14 @@
 {
-  "type": "service_account",
-  "project_id": "moris-c3bbc",
-  "private_key_id": "525aa04e18d59e0d828470afaede94f52f0065cd",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCyDilFnX9EwfVV\nneUQZTUrHb0zuqdjhdkyQCc9YqS2O9nsREP1TF/kg7NapfzpEbNLj62wIL9kZ+9e\nlbBiPC6U72QLsHPK9zbJEKmupRZtdKzrP3+gNvFlOy3TCG8bIQZDCwgsF8bRaN0q\nMdW08m+oemRDa3se74izGwvDF06htFG61VUMCWL3T9Qmeo3O4V4zZEdx4Rm7bF7f\n8UuRJM15gKuYy8eb2c0AXSsZMYvJbL7pILm3HEL7OY0gE3yYB4cdT5wzQGmXP9bk\n+eDkwtjKsbRoQ2AYKjg/vPXD3gdvZPsC8ueudmoYl9b8zik5MPRgvjFi4Yr4MT+L\nA1cd5VUJAgMBAAECggEAA1rcQOuYPPPGCBRm/ysja5ObOUjy0JLMAyDUBgzTnpU1\nnh7lXejP8YngVjZEjYd8s2q6ldQKiMO8x6Scs6Xyv1hcY19lhL7dBia9eVgy4KIy\naoAiV9YF/RRdBzn3myrN4XNpHPWTIWZ8EyIbWfyFPJPKMfGdDga3sp8KydgCVNS9\nWTYBNQAThERhb+ilIA+WS0uxFytrp5dayx6jllsKELcque1wFCCQZ8nxp/KS4Fnh\nOTt+pfWI3E8P9LV5bxpz605ow90XoKtT1pNaabBVtLArs6qMEQiL3mDij5l66cqC\nQXDfclx5rlLRlG4qtmoMYPK+v3qcUAT4RnXpxTILoQKBgQDkkr6Ff+LYTkS+mLy5\nM9WRHOvqm5jUwcdMYgQ1KE5pDO8mtW4LXQFF80gIfWUzdYFaPxNTOjn+Hxa4vMbY\ncSwfZfjE638T9cUZ0VBDYUWm8A2ajMURUkXChZwFJbOQcMaCYWC1Rgw+Bv6bVFT5\najdvodekwcXCnFjeuMD4figW2QKBgQDHa57bHU3QQa2DRAZctIWzLWGSTPTE7RRp\npB3jMa0p8LFFTninUxS+vrqXq18gtgdoCnri2pe8ayAMcNnybWM2AtYq/Qcgy3WN\n4aZyH/AhRlBOrEncdwHd4tq+/Yq6UKNAHiZTCCUA//IrYl8OdLARssHrAN/0OEt1\nZAs9IX4xsQKBgBROLPqzF7XbjiPYcbuKLUjM5vBajkMoS8ovUuxd/kk6yuwHZhVA\nV+Kc8CNA8IKXx7v6qn7UR16Z6GzU6F1GAINxjZ4AxbNCPBZFD/pMY+Gmpa67Hq6h\nPm0/bVLPvJnyStA+UlcIOAIyoN+vqDTYCMC0AfIy/JyDQynWA96PZoRRAoGAAMEv\ngLTDrp4RAgYn4AHu35a0X9Fau8QJ57xvQITXmukGQrThUADIe1BNdHV5jq4hqQsh\nG+qn2FavcFyc9oXjcjjghpkehck/UKIh9xyX1AhoFWQhg2wP3b8WBNMAy2OyunNi\nwb2uJirRx8g/g9Z9NBPxF+qQ7mOoJXGTeU+/IoECgYEAruS+p3qzS4s5KZCQdIoj\nq1BMhvCgsJXQUkYT+1O9j8OmY194GP4Uz+fGtLRam6IkTCgZdfjklPUbeQyhod4T\n3IXh6OvlEHMJ8pa0Mbnxf253nOp8UN1PdYjaDPDeoz7e8ZNO9fP1N/TSF/6tPBvS\nrdIaRyeWCoylYAC92M1S1QU=\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-fbsvc@moris-c3bbc.iam.gserviceaccount.com",
-  "client_id": "115519070158954358850",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40moris-c3bbc.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
+  "name": "leather-shop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node server.js", "max-id": "node scripts/get-max-id.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@fontsource/jost": "^5.0.0",
+    "firebase-admin": "^12.6.0",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.5"
+  }
 }
