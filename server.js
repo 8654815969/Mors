@@ -2,13 +2,17 @@ const express = require('express'), multer = require('multer'), sharp = require(
 const crypto = require('crypto'), path = require('path');
 const E = process.env;
 const { PORT = 3000, ADMIN_PASSWORD, MAX_BOT_TOKEN, MAX_USER_ID,
-  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, SITE_NAME = 'ATELIER', INSTAGRAM_URL = 'https://instagram.com/' } = E;
+  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, SITE_NAME = 'MORIS', INSTAGRAM_URL = 'https://instagram.com/' } = E;
 if (!ADMIN_PASSWORD) { console.error('Задайте ADMIN_PASSWORD'); process.exit(1); }
 const SECRET = E.SESSION_SECRET || ADMIN_PASSWORD;
 
 // Firebase Firestore: товары и фото хранятся в базе (бесплатный тариф Spark)
 const admin = require('firebase-admin');
-let sa; try { sa = JSON.parse(E.FIREBASE_SERVICE_ACCOUNT); } catch { console.error('Задайте FIREBASE_SERVICE_ACCOUNT (содержимое JSON-ключа)'); process.exit(1); }
+let sa;
+try { sa = E.FIREBASE_SERVICE_ACCOUNT ? JSON.parse(E.FIREBASE_SERVICE_ACCOUNT) : { project_id: E.FIREBASE_PROJECT_ID, client_email: E.FIREBASE_CLIENT_EMAIL, private_key: E.FIREBASE_PRIVATE_KEY }; }
+catch { console.error('FIREBASE_SERVICE_ACCOUNT: это не JSON. Вставьте файл ключа целиком.'); process.exit(1); }
+sa.private_key = String(sa.private_key || '').trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n'); // чиним переносы строк в ключе
+if (!sa.project_id || !sa.client_email || !sa.private_key.includes('BEGIN PRIVATE KEY')) { console.error('В ключе Firebase нет project_id / client_email / private_key'); process.exit(1); }
 admin.initializeApp({ credential: admin.credential.cert(sa) });
 const db = admin.firestore(), PR = db.collection('products'), IM = db.collection('images');
 let cache = null; // список товаров держим в памяти, чтобы не тратить лимит чтений
@@ -18,7 +22,7 @@ const TOKEN = crypto.createHmac('sha256', SECRET).update('admin').digest('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const isAdmin = req => { const m = (req.headers.cookie || '').match(/(?:^|; )adm=([a-f0-9]+)/); return !!m && same(m[1], TOKEN); };
 const guard = (q, s, n) => isAdmin(q) ? n() : s.status(401).json({ error: 'auth' });
-const wrap = f => (q, s) => f(q, s).catch(e => { console.error(e.message); s.status(500).json({ error: 'Ошибка сервера' }); });
+const wrap = f => (q, s) => f(q, s).catch(e => { console.error(e.message); s.status(500).json({ error: 'Ошибка сервера', detail: isAdmin(q) ? e.message : undefined }); });
 
 // простые ограничения частоты (только в памяти, ничего не пишется на диск)
 const hits = new Map();
