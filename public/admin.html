@@ -23,8 +23,10 @@ function login() {
   };
 }
 async function list() {
-  products = await fetch('/api/products').then(r => r.json());
-  root.innerHTML = `<div class="grid"><button class="plus" id="add" title="Добавить товар">+</button>
+  let err = '';
+  try { const r = await fetch('/api/products'); const d = await r.json(); if (!r.ok) throw new Error(d.detail || d.error); products = d; }
+  catch (e) { products = []; err = e.message; }
+  root.innerHTML = (err ? `<p class="err">Нет связи с базой данных: ${esc(err)}</p>` : '') + `<div class="grid"><button class="plus" id="add" title="Добавить товар">+</button>
   ${products.map(p => `<a class="card" href="#" data-id="${p.id}"><div class="im">${p.images[0] ? `<img src="/uploads/${p.images[0]}">` : ''}</div>
   <h3>${esc(p.title)}</h3><span>${p.price ? p.price + ' ₽' : 'без цены'}</span></a>`).join('')}</div>
   <p class="small" style="margin-top:30px"><a href="#" id="tn" style="text-decoration:underline">Отправить тестовое уведомление в мессенджер</a></p>`;
