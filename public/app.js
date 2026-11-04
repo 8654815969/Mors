@@ -20,7 +20,7 @@ document.addEventListener('click', e => {
 });
 
 function home() {
-  $('#app').innerHTML = `<section class="hero"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section>
+  $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section>
   <h2 class="t" id="catalog">Каталог</h2>` + (products.length
     ? `<div class="grid">${products.map(p => `<a class="card" href="/product/${p.id}" data-link>
       <div class="im">${p.images.slice(0, 2).map(i => `<img loading="lazy" src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
