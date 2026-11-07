@@ -20,12 +20,16 @@ document.addEventListener('click', e => {
 });
 
 function home() {
-  $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section>
-  <h2 class="t" id="catalog">Каталог</h2>` + (products.length
-    ? `<div class="grid">${products.map(p => `<a class="card" href="/product/${p.id}" data-link>
-      <div class="im">${p.images.slice(0, 2).map(i => `<img loading="lazy" src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
-      <h3>${esc(p.title)}</h3><span>${money(p.price)}</span></a>`).join('')}</div>`
-    : `<p class="empty">Скоро здесь появятся первые изделия.</p>`);
+  const order = [], map = {};
+  [...products].sort((x, y) => x.created - y.created).forEach(p => { const c = p.category || 'Каталог'; if (!map[c]) { map[c] = []; order.push(c); } });
+  products.forEach(p => map[p.category || 'Каталог'].push(p));
+  const card = p => `<a class="card" href="/product/${p.id}" data-link>
+    <div class="im">${p.images.slice(0, 2).map(i => `<img loading="lazy" src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
+    <h3>${esc(p.title)}</h3><span>${money(p.price)}</span></a>`;
+  $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section><div id="catalog"></div>`
+    + (products.length ? order.map(c => `<section class="cat"><h2 class="t">${esc(c)}</h2><div class="rw">
+      <button class="arr l" data-dir="-1" aria-label="Назад">‹</button><div class="rs">${map[c].map(card).join('')}</div><button class="arr r" data-dir="1" aria-label="Вперёд">›</button></div></section>`).join('')
+      : `<p class="empty">Скоро здесь появятся первые изделия.</p>`);
 }
 
 function product(id) {
@@ -57,4 +61,8 @@ function product(id) {
     } catch (x) { $('#err').textContent = x.message || 'Ошибка'; $('#sb').disabled = false; }
   };
 }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-dir]');
+  if (b) { const r = b.parentElement.querySelector('.rs'); r.scrollBy({ left: b.dataset.dir * r.clientWidth * .8, behavior: 'smooth' }); }
+});
 init();

@@ -72,3 +72,13 @@ dialog{max-height:90vh;overflow:auto}
   footer{padding:5vh 4vw;flex-direction:column;align-items:flex-start}
   dialog{padding:24px 20px}
 }
+
+.cat{margin-bottom:6vh}.cat h2.t{font-size:14px}
+.rw{position:relative}
+.rs{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 4vw;scroll-padding-left:4vw;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rs::-webkit-scrollbar{display:none}
+.rs .card{flex:0 0 clamp(220px,27vw,380px);scroll-snap-align:start}
+.arr{position:absolute;top:28%;z-index:2;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fffe;font:300 26px/1 Jost;cursor:pointer}
+.arr.l{left:1.5vw}.arr.r{right:1.5vw}.arr:hover{background:#fff;border-color:var(--ink)}
+@media(hover:none){.arr{display:none}}
+@media(max-width:760px){.rs{gap:12px}.rs .card{flex-basis:62vw}}
