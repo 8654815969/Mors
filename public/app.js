@@ -10,8 +10,9 @@ async function init() {
   document.title = cfg.name; route();
 }
 function route() {
-  const m = location.pathname.match(/^\/product\/([\w-]+)/);
-  m ? product(m[1]) : home(); scrollTo(0, 0);
+  const m = location.pathname.match(/^\/product\/([\w-]+)/), c = location.pathname.match(/^\/category\/(.+)/);
+  m ? product(m[1]) : c ? category(decodeURIComponent(c[1])) : home();
+  scrollTo(0, 0);
 }
 addEventListener('popstate', route);
 document.addEventListener('click', e => {
@@ -19,24 +20,34 @@ document.addEventListener('click', e => {
   if (a) { e.preventDefault(); history.pushState(0, '', a.getAttribute('href')); route(); }
 });
 
+const card = p => `<a class="card" href="/product/${p.id}" data-link>
+  <div class="im">${p.images.slice(0, 2).map(i => `<img loading="lazy" src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
+  <h3>${esc(p.title)}</h3><span>${money(p.price)}</span></a>`;
+const pl = n => n % 10 === 1 && n % 100 !== 11 ? 'товар' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'товара' : 'товаров';
+const catLink = c => '/category/' + encodeURIComponent(c);
+
 function home() {
   const order = [], map = {};
   [...products].sort((x, y) => x.created - y.created).forEach(p => { const c = p.category || 'Каталог'; if (!map[c]) { map[c] = []; order.push(c); } });
   products.forEach(p => map[p.category || 'Каталог'].push(p));
-  const card = p => `<a class="card" href="/product/${p.id}" data-link>
-    <div class="im">${p.images.slice(0, 2).map(i => `<img loading="lazy" src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
-    <h3>${esc(p.title)}</h3><span>${money(p.price)}</span></a>`;
   $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section><div id="catalog"></div>`
-    + (products.length ? order.map(c => `<section class="cat"><h2 class="t">${esc(c)}</h2><div class="rw">
+    + (products.length ? order.map(c => `<section class="cat"><h2 class="t"><a href="${catLink(c)}" data-link>${esc(c)}</a><a class="all" href="${catLink(c)}" data-link>Смотреть все (${map[c].length}) ›</a></h2><div class="rw">
       <button class="arr l" data-dir="-1" aria-label="Назад">‹</button><div class="rs">${map[c].map(card).join('')}</div><button class="arr r" data-dir="1" aria-label="Вперёд">›</button></div></section>`).join('')
       : `<p class="empty">Скоро здесь появятся первые изделия.</p>`);
+}
+
+function category(name) {
+  const items = products.filter(p => (p.category || 'Каталог') === name);
+  document.title = name + ' — ' + cfg.name;
+  $('#app').innerHTML = `<a class="back" href="/" data-link>← Каталог</a><div class="ch"><h1>${esc(name)}</h1><p>${items.length} ${pl(items.length)}</p></div>`
+    + (items.length ? `<div class="mp">${items.map(card).join('')}</div>` : '<p class="empty">В этой категории пока нет товаров.</p>');
 }
 
 function product(id) {
   const p = products.find(x => x.id === id);
   if (!p) return history.replaceState(0, '', '/'), home();
   document.title = p.title + ' — ' + cfg.name;
-  $('#app').innerHTML = `<a class="back" href="/" data-link>← Каталог</a><div class="pg">
+  $('#app').innerHTML = `<a class="back" href="${p.category ? catLink(p.category) : '/'}" data-link>← ${esc(p.category || 'Каталог')}</a><div class="pg">
     <div class="gal">${p.images.map(i => `<img src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
     <div class="info"><h1>${esc(p.title)}</h1><div class="price">${money(p.price)}</div>
     <p>${esc(p.desc)}</p>${p.sizes ? `<div class="meta">Размеры / варианты: ${esc(p.sizes)}</div>` : ''}

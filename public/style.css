@@ -82,3 +82,11 @@ dialog{max-height:90vh;overflow:auto}
 .arr.l{left:1.5vw}.arr.r{right:1.5vw}.arr:hover{background:#fff;border-color:var(--ink)}
 @media(hover:none){.arr{display:none}}
 @media(max-width:760px){.rs{gap:12px}.rs .card{flex-basis:62vw}}
+
+.cat h2.t{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.cat h2.t a:first-child:hover{text-decoration:underline;text-underline-offset:6px}
+.all{font-size:11px;letter-spacing:.15em;color:var(--mut);white-space:nowrap}.all:hover{color:var(--ink)}
+.ch{padding:3vh 4vw 0}.ch h1{font-weight:300;font-size:clamp(26px,4vw,40px);letter-spacing:.04em}.ch p{color:var(--mut);font-size:14px}
+.mp{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:24px 12px;padding:3vh 4vw 10vh}
+.mp .card h3{font-size:12px;letter-spacing:.03em;margin-top:8px;line-height:1.3}.mp .card span{font-size:13px}
+@media(max-width:760px){.mp{grid-template-columns:repeat(2,1fr);gap:18px 10px}.all{font-size:10px}}
