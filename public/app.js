@@ -9,10 +9,15 @@ async function init() {
   $('#ig').href = $('#fig').href = cfg.instagram;
   document.title = cfg.name; route();
 }
+const SEC = { men: 'Мужская', women: 'Женская', kids: 'Детская' };
 function route() {
-  const m = location.pathname.match(/^\/product\/([\w-]+)/), c = location.pathname.match(/^\/category\/(.+)/);
-  m ? product(m[1]) : c ? category(decodeURIComponent(c[1])) : home();
-  scrollTo(0, 0);
+  const p = location.pathname; let m;
+  if ((m = p.match(/^\/product\/([\w-]+)/))) { product(m[1]); scrollTo(0, 0); }
+  else if ((m = p.match(/^\/(men|women|kids)(?:\/(.+))?$/))) {
+    if (m[2]) { category(decodeURIComponent(m[2]), m[1]); scrollTo(0, 0); } else { home(m[1]); $('#catalog').scrollIntoView(); }
+  }
+  else if ((m = p.match(/^\/category\/(.+)/))) { category(decodeURIComponent(m[1]), ''); scrollTo(0, 0); }
+  else { home(''); scrollTo(0, 0); }
 }
 addEventListener('popstate', route);
 document.addEventListener('click', e => {
@@ -24,22 +29,35 @@ const card = p => `<a class="card" href="/product/${p.id}" data-link>
   <div class="im">${p.images.slice(0, 2).map(i => `<img loading="lazy" src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
   <h3>${esc(p.title)}</h3><span>${money(p.price)}</span></a>`;
 const pl = n => n % 10 === 1 && n % 100 !== 11 ? 'товар' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'товара' : 'товаров';
-const catLink = c => '/category/' + encodeURIComponent(c);
+const catLink = (c, s) => (s ? '/' + s : '/category') + '/' + encodeURIComponent(c);
+const pLink = p => p.category ? catLink(p.category, p.section) : (p.section ? '/' + p.section : '/');
 
-function home() {
+function rowsHTML(items, s) {
   const order = [], map = {};
-  [...products].sort((x, y) => x.created - y.created).forEach(p => { const c = p.category || 'Каталог'; if (!map[c]) { map[c] = []; order.push(c); } });
-  products.forEach(p => map[p.category || 'Каталог'].push(p));
-  $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section><div id="catalog"></div>`
-    + (products.length ? order.map(c => `<section class="cat"><h2 class="t"><a href="${catLink(c)}" data-link>${esc(c)}</a><a class="all" href="${catLink(c)}" data-link>Смотреть все (${map[c].length}) ›</a></h2><div class="rw">
-      <button class="arr l" data-dir="-1" aria-label="Назад">‹</button><div class="rs">${map[c].map(card).join('')}</div><button class="arr r" data-dir="1" aria-label="Вперёд">›</button></div></section>`).join('')
-      : `<p class="empty">Скоро здесь появятся первые изделия.</p>`);
+  [...items].sort((x, y) => x.created - y.created).forEach(p => { const c = p.category || 'Каталог'; if (!map[c]) { map[c] = []; order.push(c); } });
+  items.forEach(p => map[p.category || 'Каталог'].push(p));
+  return order.map(c => `<section class="cat"><h2 class="t"><a href="${catLink(c, s)}" data-link>${esc(c)}</a><a class="all" href="${catLink(c, s)}" data-link>Смотреть все (${map[c].length}) ›</a></h2><div class="rw">
+    <button class="arr l" data-dir="-1" aria-label="Назад">‹</button><div class="rs">${map[c].map(card).join('')}</div><button class="arr r" data-dir="1" aria-label="Вперёд">›</button></div></section>`).join('');
 }
 
-function category(name) {
-  const items = products.filter(p => (p.category || 'Каталог') === name);
+function home(sec) {
+  const tabs = [['', 'Все'], ['men', 'Мужская'], ['women', 'Женская'], ['kids', 'Детская']];
+  const named = products.some(p => p.section);
+  const body = (sec ? [sec] : ['men', 'women', 'kids', '']).map(s => {
+    const items = products.filter(p => (p.section || '') === s);
+    if (!items.length) return '';
+    const title = s ? SEC[s] : (named ? 'Другое' : '');
+    return `<div class="sec">${title ? `<h2 class="sh">${title}</h2>` : ''}${rowsHTML(items, s)}</div>`;
+  }).join('');
+  $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section>
+    <nav class="seg" id="catalog">${tabs.map(([k, l]) => `<a class="${k === (sec || '') ? 'on' : ''}" href="${k ? '/' + k : '/'}" data-link>${l}</a>`).join('')}</nav>`
+    + (body || '<p class="empty">Скоро здесь появятся изделия.</p>');
+}
+
+function category(name, sec) {
+  const items = products.filter(p => (p.category || 'Каталог') === name && (p.section || '') === sec);
   document.title = name + ' — ' + cfg.name;
-  $('#app').innerHTML = `<a class="back" href="/" data-link>← Каталог</a><div class="ch"><h1>${esc(name)}</h1><p>${items.length} ${pl(items.length)}</p></div>`
+  $('#app').innerHTML = `<a class="back" href="${sec ? '/' + sec : '/'}" data-link>← ${sec ? SEC[sec] : 'Каталог'}</a><div class="ch">${sec ? `<div class="kick">${SEC[sec]}</div>` : ''}<h1>${esc(name)}</h1><p>${items.length} ${pl(items.length)}</p></div>`
     + (items.length ? `<div class="mp">${items.map(card).join('')}</div>` : '<p class="empty">В этой категории пока нет товаров.</p>');
 }
 
@@ -47,9 +65,9 @@ function product(id) {
   const p = products.find(x => x.id === id);
   if (!p) return history.replaceState(0, '', '/'), home();
   document.title = p.title + ' — ' + cfg.name;
-  $('#app').innerHTML = `<a class="back" href="${p.category ? catLink(p.category) : '/'}" data-link>← ${esc(p.category || 'Каталог')}</a><div class="pg">
+  $('#app').innerHTML = `<a class="back" href="${pLink(p)}" data-link>← ${esc(p.category || 'Каталог')}</a><div class="pg">
     <div class="gal">${p.images.map(i => `<img src="/uploads/${i}" alt="${esc(p.title)}">`).join('')}</div>
-    <div class="info"><h1>${esc(p.title)}</h1><div class="price">${money(p.price)}</div>
+    <div class="info"><div class="kick">${SEC[p.section] || ''}</div><h1>${esc(p.title)}</h1><div class="price">${money(p.price)}</div>
     <p>${esc(p.desc)}</p>${p.sizes ? `<div class="meta">Размеры / варианты: ${esc(p.sizes)}</div>` : ''}
     <button class="btn" id="req">Оставить заявку</button></div></div>
   <dialog id="dlg"><form id="f"><h3>Заявка</h3><div class="sub">${esc(p.title)} · ${money(p.price)}<br>Мы свяжемся с вами и всё уточним.</div>

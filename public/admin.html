@@ -8,6 +8,7 @@
 const $ = s => document.querySelector(s), root = $('#root'), dlg = $('#dlg');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let products = [];
+const secName = s => ({ men: 'Мужская', women: 'Женская', kids: 'Детская' })[s] || '';
 
 async function start() {
   const me = await fetch('/api/me').then(r => r.json());
@@ -28,7 +29,7 @@ async function list() {
   catch (e) { products = []; err = e.message; }
   root.innerHTML = (err ? `<p class="err">Нет связи с базой данных: ${esc(err)}</p>` : '') + `<div class="grid"><button class="plus" id="add" title="Добавить товар">+</button>
   ${products.map(p => `<a class="card" href="#" data-id="${p.id}"><div class="im">${p.images[0] ? `<img src="/uploads/${p.images[0]}">` : ''}</div>
-  <h3>${esc(p.title)}</h3><span>${p.category ? esc(p.category) + ' · ' : ''}${p.price ? p.price + ' ₽' : 'без цены'}</span></a>`).join('')}</div>
+  <h3>${esc(p.title)}</h3><span>${secName(p.section) ? secName(p.section) + ' · ' : ''}${p.category ? esc(p.category) + ' · ' : ''}${p.price ? p.price + ' ₽' : 'без цены'}</span></a>`).join('')}</div>
   <p class="small" style="margin-top:30px"><a href="#" id="tn" style="text-decoration:underline">Отправить тестовое уведомление в мессенджер</a></p>`;
   $('#add').onclick = () => edit();
   root.querySelectorAll('.card').forEach(c => c.onclick = e => { e.preventDefault(); edit(products.find(p => p.id === c.dataset.id)); });
@@ -45,6 +46,7 @@ function edit(p) {
     <label>Фото (первое — обложка; нажмите на фото, чтобы сделать обложкой)</label><div class="thumbs" id="th"></div>
     <input type="file" id="fi" accept="image/*" multiple>
     <label>Название</label><input name="title" required value="${esc(p.title)}">
+    <label>Раздел</label><select name="section" required><option value="">— выберите —</option>${[['men', 'Мужская'], ['women', 'Женская'], ['kids', 'Детская']].map(([k, l]) => `<option value="${k}" ${p.section === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
     <label>Категория (Обувь, Куртки…)</label><input name="category" list="cats" value="${esc(p.category || '')}"><datalist id="cats">${[...new Set(['Куртки', 'Обувь', 'Сумки', 'Ремни', 'Аксессуары', ...products.map(x => x.category).filter(Boolean)])].map(x => `<option value="${esc(x)}">`).join('')}</datalist>
     <label>Цена, ₽</label><input name="price" type="number" min="0" inputmode="numeric" value="${p.price || ''}">
     <label>Размеры / варианты (необязательно)</label><input name="sizes" value="${esc(p.sizes)}">
@@ -69,7 +71,7 @@ function edit(p) {
       if (r.ok) { dlg.close(); list(); } else { alert((await r.json()).error || 'Ошибка'); $('#sv').disabled = false; $('#sv').textContent = 'Сохранить'; }
     };
   };
-  const keepForm = () => { const f = $('#pf'); if (f) { const d = new FormData(f); p = { ...p, title: d.get('title'), category: d.get('category'), price: d.get('price'), sizes: d.get('sizes'), desc: d.get('desc') }; } };
+  const keepForm = () => { const f = $('#pf'); if (f) { const d = new FormData(f); p = { ...p, title: d.get('title'), category: d.get('category'), section: d.get('section'), price: d.get('price'), sizes: d.get('sizes'), desc: d.get('desc') }; } };
   draw(); dlg.showModal();
 }
 start();

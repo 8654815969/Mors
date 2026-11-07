@@ -90,3 +90,11 @@ dialog{max-height:90vh;overflow:auto}
 .mp{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:24px 12px;padding:3vh 4vw 10vh}
 .mp .card h3{font-size:12px;letter-spacing:.03em;margin-top:8px;line-height:1.3}.mp .card span{font-size:13px}
 @media(max-width:760px){.mp{grid-template-columns:repeat(2,1fr);gap:18px 10px}.all{font-size:10px}}
+
+.seg{display:flex;justify-content:center;gap:14px clamp(20px,4vw,48px);padding:0 4vw 5vh;flex-wrap:wrap;scroll-margin-top:80px}
+.seg a{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut);padding-bottom:8px;border-bottom:1px solid transparent}
+.seg a.on,.seg a:hover{color:var(--ink);border-color:var(--ink)}
+.sec{margin-bottom:4vh}.sh{font-weight:300;font-size:clamp(24px,3.4vw,34px);letter-spacing:.06em;padding:2vh 4vw 3vh}
+.kick{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+select{width:100%;border:0;border-bottom:1px solid #cfccc6;padding:8px 0;font:300 16px Jost;background:none;outline:0;border-radius:0;color:var(--ink)}
+@media(max-width:760px){.seg a{font-size:11px;letter-spacing:.14em}}
