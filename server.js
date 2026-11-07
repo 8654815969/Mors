@@ -76,7 +76,7 @@ async function saveImages(files) {
   }
   return names;
 }
-const fields = b => ({ title: clip(b.title, 120), category: clip(b.category, 40), price: Math.max(0, parseInt(b.price) || 0), sizes: clip(b.sizes, 120), desc: clip(b.desc, 4000) });
+const fields = b => ({ title: clip(b.title, 120), category: clip(b.category, 40), section: ['men', 'women', 'kids'].includes(b.section) ? b.section : '', price: Math.max(0, parseInt(b.price) || 0), sizes: clip(b.sizes, 120), desc: clip(b.desc, 4000) });
 
 app.post('/api/products', guard, upload.array('images', 12), wrap(async (q, s) => {
   const p = { id: crypto.randomBytes(5).toString('hex'), ...fields(q.body), images: await saveImages(q.files), created: Date.now() };
@@ -134,6 +134,7 @@ app.get('/uploads/:id', wrap(async (q, s) => {
 app.use('/fonts', express.static(path.join(__dirname, 'node_modules/@fontsource/jost/files'), { maxAge: '1y' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/admin', (q, s) => s.sendFile(path.join(__dirname, 'public/admin.html')));
+app.get(['/men', '/women', '/kids', '/men/:c', '/women/:c', '/kids/:c'], (q, s) => s.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/category/:name', (q, s) => s.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/product/:id', (q, s) => s.sendFile(path.join(__dirname, 'public/index.html')));
 app.listen(PORT, () => console.log('http://localhost:' + PORT));
