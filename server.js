@@ -134,5 +134,6 @@ app.get('/uploads/:id', wrap(async (q, s) => {
 app.use('/fonts', express.static(path.join(__dirname, 'node_modules/@fontsource/jost/files'), { maxAge: '1y' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/admin', (q, s) => s.sendFile(path.join(__dirname, 'public/admin.html')));
+app.get('/category/:name', (q, s) => s.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/product/:id', (q, s) => s.sendFile(path.join(__dirname, 'public/index.html')));
 app.listen(PORT, () => console.log('http://localhost:' + PORT));
