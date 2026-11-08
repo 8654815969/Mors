@@ -108,3 +108,5 @@ select{width:100%;border:0;border-bottom:1px solid #cfccc6;padding:8px 0;font:30
 
 .hero{padding:3vh 4vw 5vh}.banner{margin-bottom:5vh}
 @media(max-width:760px){.hero{padding:3vh 6vw 4vh}.banner{margin-bottom:4vh}}
+
+.banner{aspect-ratio:auto;background:none}.banner img{height:auto;object-fit:contain}

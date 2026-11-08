@@ -7,6 +7,10 @@
 .blk{max-width:560px;margin-bottom:44px}.cr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .ac a{display:inline-block;width:32px;text-align:center;font-size:17px;color:var(--mut)}.ac a:hover{color:var(--ink)}
 .row input{flex:1}
+.cr{gap:10px;background:#fff;position:relative}.nm{flex:1}
+.grip{cursor:grab;touch-action:none;user-select:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:22px;margin-left:-8px}
+.cr.drag{z-index:3;box-shadow:0 6px 22px #0003;cursor:grabbing}.cr.before{box-shadow:0 -2px 0 var(--ink)}.cr.after{box-shadow:0 2px 0 var(--ink)}
+.hint .box{aspect-ratio:5/2;max-width:360px;border:1px dashed #bdb9b2;display:flex;align-items:center;justify-content:center;color:var(--mut);margin:8px 0;background:var(--soft)}
 </style></head><body>
 <header><span class="nav">Админка</span><span class="logo">Управление</span><a class="nav r" href="/">На сайт</a></header>
 <div class="adm" id="root"></div>
@@ -56,10 +60,9 @@ function vProducts() {
 async function saveCats() { site = await send('/api/site', 'PUT', { labels: site.labels, cats: site.cats }); vCats(); }
 function vCats() {
   $('#view').innerHTML = SECS.map(s => `<div class="blk"><label>Название раздела</label><input data-lbl="${s}" value="${esc(site.labels[s])}">
-    <label>Категории — порядок здесь = порядок строк на сайте</label>
-    ${site.cats[s].map((c, i) => `<div class="cr"><span>${esc(c)}</span><span class="ac">
-      <a href="#" data-a="up" data-s="${s}" data-i="${i}" title="Выше">↑</a><a href="#" data-a="dn" data-s="${s}" data-i="${i}" title="Ниже">↓</a>
-      <a href="#" data-a="ren" data-s="${s}" data-i="${i}" title="Переименовать">✎</a><a href="#" data-a="del" data-s="${s}" data-i="${i}" title="Удалить">✕</a></span></div>`).join('') || '<p class="small">Пока нет категорий</p>'}
+    <label>Категории — перетащите за значок ⠿, чтобы поменять порядок строк на сайте</label>
+    <div class="cl" data-s="${s}">${site.cats[s].map((c, i) => `<div class="cr" data-i="${i}"><span class="grip" title="Перетащите">⠿</span><span class="nm">${esc(c)}</span><span class="ac">
+      <a href="#" data-a="ren" data-s="${s}" data-i="${i}" title="Переименовать">✎</a><a href="#" data-a="del" data-s="${s}" data-i="${i}" title="Удалить">✕</a></span></div>`).join('') || '<p class="small">Пока нет категорий</p>'}</div>
     <div class="row"><input data-new="${s}" placeholder="Новая категория, например: Обувь"><button class="btn" data-add="${s}" style="width:auto;padding:0 22px">Добавить</button></div></div>`).join('');
 }
 document.addEventListener('click', async e => {
@@ -69,17 +72,45 @@ document.addEventListener('click', async e => {
       const s = a.dataset.add, v = $(`[data-new="${s}"]`).value.trim(); if (!v) return;
       site.cats[s] = [...site.cats[s].filter(x => x !== v), v]; return await saveCats();
     }
-    const s = a.dataset.s, i = +a.dataset.i, L = site.cats[s], c = L[i], k = a.dataset.a;
-    if (k === 'up' && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
-    if (k === 'dn' && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
-    if (k === 'del') { if (products.some(p => p.section === s && p.category === c)) return alert('В этой категории есть товары. Сначала перенесите их в другую.'); L.splice(i, 1); }
-    if (k === 'ren') {
-      const n = (prompt('Новое название категории', c) || '').trim(); if (!n || n === c) return;
-      site = await send('/api/rename-category', 'POST', { section: s, from: c, to: n }); products = await J('/api/products'); return vCats();
+    const s = a.dataset.s, i = +a.dataset.i, L = site.cats[s], c = L[i];
+    if (a.dataset.a === 'del') {
+      if (products.some(p => p.section === s && p.category === c)) return alert('В этой категории есть товары. Сначала перенесите их в другую.');
+      L.splice(i, 1); return await saveCats();
     }
-    await saveCats();
+    const n = (prompt('Новое название категории', c) || '').trim(); if (!n || n === c) return;
+    site = await send('/api/rename-category', 'POST', { section: s, from: c, to: n }); products = await J('/api/products'); vCats();
   } catch (x) { alert(x.message); }
 });
+
+// перетаскивание категорий мышкой или пальцем
+let drag = null;
+document.addEventListener('pointerdown', e => {
+  const g = e.target.closest('.grip'); if (!g) return;
+  e.preventDefault(); const row = g.closest('.cr');
+  drag = { row, list: row.parentElement, y0: e.clientY, idx: +row.dataset.i };
+  row.classList.add('drag'); g.setPointerCapture(e.pointerId);
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const { row, list } = drag, others = [...list.querySelectorAll('.cr')].filter(r => r !== row);
+  row.style.transform = `translateY(${e.clientY - drag.y0}px)`;
+  others.forEach(r => r.classList.remove('before', 'after'));
+  drag.idx = others.filter(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2 < e.clientY; }).length;
+  if (others.length) (others[drag.idx] || others[others.length - 1]).classList.add(others[drag.idx] ? 'before' : 'after');
+});
+const endDrag = async () => {
+  if (!drag) return;
+  const { row, list, idx } = drag; drag = null; row.style.transform = ''; row.classList.remove('drag');
+  const s = list.dataset.s, old = site.cats[s], ord = [...list.querySelectorAll('.cr')].filter(r => r !== row).map(r => +r.dataset.i);
+  list.querySelectorAll('.cr').forEach(r => r.classList.remove('before', 'after'));
+  ord.splice(idx, 0, +row.dataset.i);
+  const next = ord.map(i => old[i]);
+  if (next.every((c, i) => c === old[i])) return;
+  site.cats[s] = next;
+  try { await saveCats(); } catch (x) { alert(x.message); }
+};
+document.addEventListener('pointerup', endDrag); document.addEventListener('pointercancel', endDrag);
+
 document.addEventListener('change', async e => {
   const s = e.target.dataset && e.target.dataset.lbl; if (!s) return;
   site.labels[s] = e.target.value.trim() || site.labels[s];
@@ -88,7 +119,7 @@ document.addEventListener('change', async e => {
 
 function vBanner() {
   const b = site.banner;
-  $('#view').innerHTML = `<form id="bf" style="max-width:560px"><label>Фото баннера — горизонтальное, лучше 2000×800 и шире</label>
+  $('#view').innerHTML = `<form id="bf" style="max-width:560px"><label>Фото баннера</label><div class="hint"><div class="box">2000 × 800 px</div><p class="small">Лучший размер: 2000 × 800 пикселей (формат 5:2), JPG или PNG. Баннер показывается целиком, без обрезки, и на компьютере, и на телефоне. Другой формат тоже подойдёт, но чем он выше, тем больше места займёт на странице.</p></div>
    ${b.image ? `<img src="/uploads/${b.image}" style="width:100%;margin:8px 0;display:block">` : '<p class="small">Баннер пока не загружен</p>'}
    <input type="file" name="image" accept="image/*"><label>Подпись на баннере (необязательно)</label><input name="caption" maxlength="80" value="${esc(b.caption)}">
    <div class="row"><button class="btn">Сохранить</button>${b.image ? '<button type="button" class="btn ghost" id="rm">Убрать баннер</button>' : ''}</div></form>`;
