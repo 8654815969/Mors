@@ -98,3 +98,13 @@ dialog{max-height:90vh;overflow:auto}
 .kick{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
 select{width:100%;border:0;border-bottom:1px solid #cfccc6;padding:8px 0;font:300 16px Jost;background:none;outline:0;border-radius:0;color:var(--ink)}
 @media(max-width:760px){.seg a{font-size:11px;letter-spacing:.14em}}
+
+.top{text-align:center;padding:9vh 4vw 4vh}.top .mark{margin:0 auto}
+.banner{position:relative;margin:0 4vw;aspect-ratio:21/8;overflow:hidden;background:var(--soft)}
+.banner img{width:100%;height:100%;object-fit:cover;display:block}
+.banner span{position:absolute;left:0;right:0;bottom:7%;text-align:center;color:#fff;letter-spacing:.3em;text-transform:uppercase;font-size:clamp(12px,1.6vw,18px);text-shadow:0 1px 14px #0009}
+.hero{padding:7vh 4vw 6vh}
+@media(max-width:760px){.top{padding:5vh 4vw 3vh}.banner{margin:0;aspect-ratio:4/3}.hero{padding:5vh 6vw 4vh}}
+
+.hero{padding:3vh 4vw 5vh}.banner{margin-bottom:5vh}
+@media(max-width:760px){.hero{padding:3vh 6vw 4vh}.banner{margin-bottom:4vh}}

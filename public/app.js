@@ -3,13 +3,17 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const money = p => p ? new Intl.NumberFormat('ru-RU').format(p) + ' ₽' : 'Цена по запросу';
 let cfg = {}, products = [];
 
+let site = { cats: { men: [], women: [], kids: [] }, banner: { image: '', caption: '' } };
 async function init() {
-  [cfg, products] = await Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/products').then(r => r.json())]);
+  const get = u => fetch(u).then(r => r.json()).catch(() => null);
+  const [c, p, st] = await Promise.all([get('/api/config'), get('/api/products'), get('/api/site')]);
+  cfg = c || { name: 'MORIS', instagram: '#' }; products = Array.isArray(p) ? p : [];
+  if (st && st.labels) { site = st; SEC = st.labels; }
   for (const id of ['logo', 'fn']) $('#' + id).textContent = cfg.name;
   $('#ig').href = $('#fig').href = cfg.instagram;
   document.title = cfg.name; route();
 }
-const SEC = { men: 'Мужская', women: 'Женская', kids: 'Детская' };
+let SEC = { men: 'Мужская категория', women: 'Женская категория', kids: 'Детская категория' };
 function route() {
   const p = location.pathname; let m;
   if ((m = p.match(/^\/product\/([\w-]+)/))) { product(m[1]); scrollTo(0, 0); }
@@ -36,12 +40,14 @@ function rowsHTML(items, s) {
   const order = [], map = {};
   [...items].sort((x, y) => x.created - y.created).forEach(p => { const c = p.category || 'Каталог'; if (!map[c]) { map[c] = []; order.push(c); } });
   items.forEach(p => map[p.category || 'Каталог'].push(p));
+  const pi = c => { const i = ((site.cats || {})[s] || []).indexOf(c); return i < 0 ? 999 : i; };
+  order.sort((x, y) => pi(x) - pi(y));
   return order.map(c => `<section class="cat"><h2 class="t"><a href="${catLink(c, s)}" data-link>${esc(c)}</a><a class="all" href="${catLink(c, s)}" data-link>Смотреть все (${map[c].length}) ›</a></h2><div class="rw">
     <button class="arr l" data-dir="-1" aria-label="Назад">‹</button><div class="rs">${map[c].map(card).join('')}</div><button class="arr r" data-dir="1" aria-label="Вперёд">›</button></div></section>`).join('');
 }
 
 function home(sec) {
-  const tabs = [['', 'Все'], ['men', 'Мужская'], ['women', 'Женская'], ['kids', 'Детская']];
+  const tabs = [['', 'Все'], ['men', SEC.men], ['women', SEC.women], ['kids', SEC.kids]];
   const named = products.some(p => p.section);
   const body = (sec ? [sec] : ['men', 'women', 'kids', '']).map(s => {
     const items = products.filter(p => (p.section || '') === s);
@@ -49,7 +55,7 @@ function home(sec) {
     const title = s ? SEC[s] : (named ? 'Другое' : '');
     return `<div class="sec">${title ? `<h2 class="sh">${title}</h2>` : ''}${rowsHTML(items, s)}</div>`;
   }).join('');
-  $('#app').innerHTML = `<section class="hero"><img class="mark" src="/logo.png" alt="" draggable="false"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section>
+  $('#app').innerHTML = `<div class="top"><img class="mark" src="/logo.png" alt="" draggable="false"></div><section class="hero"><h1>Изделия из натуральной кожи</h1><p>Сделано вручную. Каждая вещь — в единственном экземпляре.</p></section>${site.banner.image ? `<div class="banner"><img src="/uploads/${site.banner.image}" alt="">${site.banner.caption ? `<span>${esc(site.banner.caption)}</span>` : ''}</div>` : ''}
     <nav class="seg" id="catalog">${tabs.map(([k, l]) => `<a class="${k === (sec || '') ? 'on' : ''}" href="${k ? '/' + k : '/'}" data-link>${l}</a>`).join('')}</nav>`
     + (body || '<p class="empty">Скоро здесь появятся изделия.</p>');
 }

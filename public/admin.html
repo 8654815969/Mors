@@ -1,53 +1,121 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>Админка</title><link rel="stylesheet" href="/style.css"></head><body>
-<header><span class="nav">Админка</span><span class="logo">Товары</span><a class="nav r" href="/">На сайт</a></header>
+<title>Админка</title><link rel="stylesheet" href="/style.css">
+<style>
+.tabs{display:flex;gap:28px;margin-bottom:28px;flex-wrap:wrap}.tabs a{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);padding-bottom:6px;border-bottom:1px solid transparent}
+.tabs a.on{color:var(--ink);border-color:var(--ink)}
+.blk{max-width:560px;margin-bottom:44px}.cr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ac a{display:inline-block;width:32px;text-align:center;font-size:17px;color:var(--mut)}.ac a:hover{color:var(--ink)}
+.row input{flex:1}
+</style></head><body>
+<header><span class="nav">Админка</span><span class="logo">Управление</span><a class="nav r" href="/">На сайт</a></header>
 <div class="adm" id="root"></div>
 <dialog id="dlg"></dialog>
 <script>
 const $ = s => document.querySelector(s), root = $('#root'), dlg = $('#dlg');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let products = [];
-const secName = s => ({ men: 'Мужская', women: 'Женская', kids: 'Детская' })[s] || '';
+const SECS = ['men', 'women', 'kids'];
+let products = [], tab = 'products';
+let site = { labels: { men: 'Мужская категория', women: 'Женская категория', kids: 'Детская категория' }, cats: { men: [], women: [], kids: [] }, banner: { image: '', caption: '' } };
+const J = (u, o) => fetch(u, o).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.detail || d.error || 'Ошибка'); return d; });
+const send = (u, m, b) => J(u, { method: m, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+const secName = s => site.labels[s] || '';
 
-async function start() {
-  const me = await fetch('/api/me').then(r => r.json());
-  me.admin ? list() : login();
-}
+async function start() { const me = await J('/api/me'); me.admin ? load() : login(); }
 function login() {
   root.innerHTML = `<form id="lf" style="max-width:320px;margin:10vh auto"><label>Пароль</label><input type="password" id="pw" autofocus>
   <div class="err" id="e"></div><button class="btn">Войти</button><p class="small" style="margin-top:12px">Вход нужен один раз — потом устройство запомнится.</p></form>`;
   $('#lf').onsubmit = async e => {
     e.preventDefault();
-    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('#pw').value }) });
-    r.ok ? list() : $('#e').textContent = (await r.json()).error;
+    try { await send('/api/login', 'POST', { password: $('#pw').value }); load(); } catch (x) { $('#e').textContent = x.message; }
   };
 }
-async function list() {
+async function load() {
   let err = '';
-  try { const r = await fetch('/api/products'); const d = await r.json(); if (!r.ok) throw new Error(d.detail || d.error); products = d; }
-  catch (e) { products = []; err = e.message; }
-  root.innerHTML = (err ? `<p class="err">Нет связи с базой данных: ${esc(err)}</p>` : '') + `<div class="grid"><button class="plus" id="add" title="Добавить товар">+</button>
+  try { [products, site] = await Promise.all([J('/api/products'), J('/api/site')]); } catch (e) { err = e.message; }
+  show(err);
+}
+function show(err = '') {
+  const T = [['products', 'Товары'], ['cats', 'Категории'], ['banner', 'Баннер']];
+  root.innerHTML = (err ? `<p class="err">Нет связи с базой данных: ${esc(err)}</p>` : '') +
+    `<div class="tabs">${T.map(([k, l]) => `<a href="#" data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div><div id="view"></div>`;
+  root.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; show(); });
+  ({ products: vProducts, cats: vCats, banner: vBanner })[tab]();
+}
+
+function vProducts() {
+  $('#view').innerHTML = `<div class="grid"><button class="plus" id="add" title="Добавить товар">+</button>
   ${products.map(p => `<a class="card" href="#" data-id="${p.id}"><div class="im">${p.images[0] ? `<img src="/uploads/${p.images[0]}">` : ''}</div>
-  <h3>${esc(p.title)}</h3><span>${secName(p.section) ? secName(p.section) + ' · ' : ''}${p.category ? esc(p.category) + ' · ' : ''}${p.price ? p.price + ' ₽' : 'без цены'}</span></a>`).join('')}</div>
+  <h3>${esc(p.title)}</h3><span>${secName(p.section) ? esc(secName(p.section)) + ' · ' : ''}${p.category ? esc(p.category) + ' · ' : ''}${p.price ? p.price + ' ₽' : 'без цены'}</span></a>`).join('')}</div>
   <p class="small" style="margin-top:30px"><a href="#" id="tn" style="text-decoration:underline">Отправить тестовое уведомление в мессенджер</a></p>`;
   $('#add').onclick = () => edit();
   root.querySelectorAll('.card').forEach(c => c.onclick = e => { e.preventDefault(); edit(products.find(p => p.id === c.dataset.id)); });
-  $('#tn').onclick = async e => {
-    e.preventDefault(); const r = await fetch('/api/test-notify', { method: 'POST' });
-    alert(r.ok ? 'Отправлено — проверьте мессенджер' : 'Ошибка: ' + (await r.json()).error);
+  $('#tn').onclick = async e => { e.preventDefault(); try { await J('/api/test-notify', { method: 'POST' }); alert('Отправлено — проверьте мессенджер'); } catch (x) { alert('Ошибка: ' + x.message); } };
+}
+
+async function saveCats() { site = await send('/api/site', 'PUT', { labels: site.labels, cats: site.cats }); vCats(); }
+function vCats() {
+  $('#view').innerHTML = SECS.map(s => `<div class="blk"><label>Название раздела</label><input data-lbl="${s}" value="${esc(site.labels[s])}">
+    <label>Категории — порядок здесь = порядок строк на сайте</label>
+    ${site.cats[s].map((c, i) => `<div class="cr"><span>${esc(c)}</span><span class="ac">
+      <a href="#" data-a="up" data-s="${s}" data-i="${i}" title="Выше">↑</a><a href="#" data-a="dn" data-s="${s}" data-i="${i}" title="Ниже">↓</a>
+      <a href="#" data-a="ren" data-s="${s}" data-i="${i}" title="Переименовать">✎</a><a href="#" data-a="del" data-s="${s}" data-i="${i}" title="Удалить">✕</a></span></div>`).join('') || '<p class="small">Пока нет категорий</p>'}
+    <div class="row"><input data-new="${s}" placeholder="Новая категория, например: Обувь"><button class="btn" data-add="${s}" style="width:auto;padding:0 22px">Добавить</button></div></div>`).join('');
+}
+document.addEventListener('click', async e => {
+  const a = e.target.closest('#view [data-a],#view [data-add]'); if (!a || tab !== 'cats') return; e.preventDefault();
+  try {
+    if (a.dataset.add) {
+      const s = a.dataset.add, v = $(`[data-new="${s}"]`).value.trim(); if (!v) return;
+      site.cats[s] = [...site.cats[s].filter(x => x !== v), v]; return await saveCats();
+    }
+    const s = a.dataset.s, i = +a.dataset.i, L = site.cats[s], c = L[i], k = a.dataset.a;
+    if (k === 'up' && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
+    if (k === 'dn' && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+    if (k === 'del') { if (products.some(p => p.section === s && p.category === c)) return alert('В этой категории есть товары. Сначала перенесите их в другую.'); L.splice(i, 1); }
+    if (k === 'ren') {
+      const n = (prompt('Новое название категории', c) || '').trim(); if (!n || n === c) return;
+      site = await send('/api/rename-category', 'POST', { section: s, from: c, to: n }); products = await J('/api/products'); return vCats();
+    }
+    await saveCats();
+  } catch (x) { alert(x.message); }
+});
+document.addEventListener('change', async e => {
+  const s = e.target.dataset && e.target.dataset.lbl; if (!s) return;
+  site.labels[s] = e.target.value.trim() || site.labels[s];
+  try { await saveCats(); } catch (x) { alert(x.message); }
+});
+
+function vBanner() {
+  const b = site.banner;
+  $('#view').innerHTML = `<form id="bf" style="max-width:560px"><label>Фото баннера — горизонтальное, лучше 2000×800 и шире</label>
+   ${b.image ? `<img src="/uploads/${b.image}" style="width:100%;margin:8px 0;display:block">` : '<p class="small">Баннер пока не загружен</p>'}
+   <input type="file" name="image" accept="image/*"><label>Подпись на баннере (необязательно)</label><input name="caption" maxlength="80" value="${esc(b.caption)}">
+   <div class="row"><button class="btn">Сохранить</button>${b.image ? '<button type="button" class="btn ghost" id="rm">Убрать баннер</button>' : ''}</div></form>`;
+  $('#bf').onsubmit = async e => {
+    e.preventDefault(); const fd = new FormData(e.target); if (!fd.get('image').size) fd.delete('image');
+    try { site = await J('/api/banner', { method: 'PUT', body: fd }); vBanner(); alert('Сохранено'); } catch (x) { alert(x.message); }
+  };
+  if ($('#rm')) $('#rm').onclick = async () => {
+    const fd = new FormData(); fd.append('remove', '1'); fd.append('caption', '');
+    try { site = await J('/api/banner', { method: 'PUT', body: fd }); vBanner(); } catch (x) { alert(x.message); }
   };
 }
+
+const catOpts = (sec, cur) => { const L = [...(site.cats[sec] || [])]; if (cur && !L.includes(cur)) L.push(cur);
+  return '<option value="">— выберите —</option>' + L.map(c => `<option ${c === cur ? 'selected' : ''}>${esc(c)}</option>`).join(''); };
 function edit(p) {
-  p = p || { title: '', price: '', sizes: '', desc: '', images: [] };
+  p = p || { title: '', price: '', sizes: '', desc: '', images: [], section: '', category: '' };
   let keep = [...p.images], files = [];
+  const keepForm = () => { const f = $('#pf'); if (f) { const d = new FormData(f); p = { ...p, title: d.get('title'), section: d.get('section'), category: d.get('category'), price: d.get('price'), sizes: d.get('sizes'), desc: d.get('desc') }; } };
   const draw = () => {
     dlg.innerHTML = `<form id="pf"><h3>${p.id ? 'Редактировать' : 'Новый товар'}</h3>
     <label>Фото (первое — обложка; нажмите на фото, чтобы сделать обложкой)</label><div class="thumbs" id="th"></div>
     <input type="file" id="fi" accept="image/*" multiple>
     <label>Название</label><input name="title" required value="${esc(p.title)}">
-    <label>Раздел</label><select name="section" required><option value="">— выберите —</option>${[['men', 'Мужская'], ['women', 'Женская'], ['kids', 'Детская']].map(([k, l]) => `<option value="${k}" ${p.section === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-    <label>Категория (Обувь, Куртки…)</label><input name="category" list="cats" value="${esc(p.category || '')}"><datalist id="cats">${[...new Set(['Куртки', 'Обувь', 'Сумки', 'Ремни', 'Аксессуары', ...products.map(x => x.category).filter(Boolean)])].map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+    <label>Раздел</label><select name="section" id="sec" required><option value="">— выберите —</option>${SECS.map(k => `<option value="${k}" ${p.section === k ? 'selected' : ''}>${esc(site.labels[k])}</option>`).join('')}</select>
+    <label>Категория</label><select name="category" id="cat" required>${catOpts(p.section, p.category)}</select>
+    <p class="small">Нет нужной категории? Добавьте её во вкладке «Категории».</p>
     <label>Цена, ₽</label><input name="price" type="number" min="0" inputmode="numeric" value="${p.price || ''}">
     <label>Размеры / варианты (необязательно)</label><input name="sizes" value="${esc(p.sizes)}">
     <label>Описание</label><textarea name="desc" rows="5">${esc(p.desc)}</textarea>
@@ -60,18 +128,18 @@ function edit(p) {
       if (x) keep = keep.filter(n => n !== x); else if (t) keep = [t.dataset.n, ...keep.filter(n => n !== t.dataset.n)];
       keepForm(); draw();
     };
+    $('#sec').onchange = () => { $('#cat').innerHTML = catOpts($('#sec').value, ''); };
     $('#fi').onchange = e => { files.push(...e.target.files); keepForm(); draw(); };
     $('#cl').onclick = () => dlg.close();
-    if ($('#del')) $('#del').onclick = async e => { e.preventDefault(); if (confirm('Удалить товар?')) { await fetch('/api/products/' + p.id, { method: 'DELETE' }); dlg.close(); list(); } };
+    if ($('#del')) $('#del').onclick = async e => { e.preventDefault(); if (confirm('Удалить товар?')) { await fetch('/api/products/' + p.id, { method: 'DELETE' }); dlg.close(); load(); } };
     $('#pf').onsubmit = async e => {
       e.preventDefault(); $('#sv').disabled = true; $('#sv').textContent = 'Сохраняю…';
       const fd = new FormData(e.target); fd.delete('');
       files.forEach(f => fd.append('images', f)); fd.append('keep', JSON.stringify(keep));
-      const r = await fetch(p.id ? '/api/products/' + p.id : '/api/products', { method: p.id ? 'PUT' : 'POST', body: fd });
-      if (r.ok) { dlg.close(); list(); } else { alert((await r.json()).error || 'Ошибка'); $('#sv').disabled = false; $('#sv').textContent = 'Сохранить'; }
+      try { await J(p.id ? '/api/products/' + p.id : '/api/products', { method: p.id ? 'PUT' : 'POST', body: fd }); dlg.close(); load(); }
+      catch (x) { alert(x.message); $('#sv').disabled = false; $('#sv').textContent = 'Сохранить'; }
     };
   };
-  const keepForm = () => { const f = $('#pf'); if (f) { const d = new FormData(f); p = { ...p, title: d.get('title'), category: d.get('category'), section: d.get('section'), price: d.get('price'), sizes: d.get('sizes'), desc: d.get('desc') }; } };
   draw(); dlg.showModal();
 }
 start();
