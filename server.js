@@ -18,6 +18,15 @@ const db = admin.firestore(), PR = db.collection('products'), IM = db.collection
 let cache = null; // список товаров держим в памяти, чтобы не тратить лимит чтений
 const load = async () => cache || (cache = (await PR.get()).docs.map(d => d.data()).sort((a, b) => b.created - a.created));
 const bust = () => { cache = null; };
+const ST = db.doc('site/settings'), SECS = ['men', 'women', 'kids']; // настройки сайта: названия разделов, порядок категорий, баннер
+const DEF = () => ({ labels: { men: 'Мужская категория', women: 'Женская категория', kids: 'Детская категория' }, cats: { men: [], women: [], kids: [] }, banner: { image: '', caption: '' } });
+let scache = null;
+const getSet = async () => {
+  if (!scache) { const d = await ST.get(), b = DEF(), v = d.exists ? d.data() : {};
+    scache = { labels: { ...b.labels, ...v.labels }, cats: { ...b.cats, ...v.cats }, banner: { ...b.banner, ...v.banner } }; }
+  return scache;
+};
+const putSet = async st => { await ST.set(st); scache = st; };
 const TOKEN = crypto.createHmac('sha256', SECRET).update('admin').digest('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const isAdmin = req => { const m = (req.headers.cookie || '').match(/(?:^|; )adm=([a-f0-9]+)/); return !!m && same(m[1], TOKEN); };
@@ -64,10 +73,10 @@ app.post('/api/login', (q, s) => {
   s.json({ ok: true });
 });
 
-async function saveImages(files) {
+async function saveImages(files, width = 1400) {
   const names = [];
   for (const f of files || []) {
-    const n = crypto.randomUUID(); let w = 1400, q = 78, buf;
+    const n = crypto.randomUUID(); let w = width, q = 78, buf;
     do { // фото должно быть меньше 1 МБ (лимит документа Firestore)
       buf = await sharp(f.buffer).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: q }).toBuffer();
       q -= 12; w = Math.round(w * .85);
@@ -98,6 +107,31 @@ app.delete('/api/products/:id', guard, wrap(async (q, s) => {
   const p = (await load()).find(x => x.id === q.params.id);
   if (p) { await Promise.all(p.images.map(n => IM.doc(n).delete())); await PR.doc(p.id).delete(); bust(); }
   s.json({ ok: true });
+}));
+
+app.get('/api/site', wrap(async (q, s) => s.json(await getSet())));
+app.put('/api/site', guard, wrap(async (q, s) => {
+  const st = await getSet(), b = q.body || {};
+  SECS.forEach(k => {
+    if (b.labels && b.labels[k] !== undefined) st.labels[k] = clip(b.labels[k], 30) || DEF().labels[k];
+    if (b.cats && Array.isArray(b.cats[k])) st.cats[k] = [...new Set(b.cats[k].map(x => clip(x, 40)).filter(Boolean))];
+  });
+  await putSet(st); s.json(st);
+}));
+app.post('/api/rename-category', guard, wrap(async (q, s) => {
+  const { section, from } = q.body || {}, to = clip((q.body || {}).to, 40), st = await getSet();
+  if (!SECS.includes(section) || !from || !to) return s.status(400).json({ error: 'Неверные данные' });
+  st.cats[section] = [...new Set(st.cats[section].map(c => c === from ? to : c))];
+  const batch = db.batch();
+  (await load()).filter(p => p.section === section && p.category === from).forEach(p => batch.update(PR.doc(p.id), { category: to }));
+  await batch.commit(); bust(); await putSet(st); s.json(st);
+}));
+app.put('/api/banner', guard, upload.single('image'), wrap(async (q, s) => {
+  const st = await getSet();
+  if (q.body.remove === '1' && st.banner.image) { await IM.doc(st.banner.image).delete(); st.banner.image = ''; }
+  if (q.file) { const [n] = await saveImages([q.file], 2000); if (st.banner.image) await IM.doc(st.banner.image).delete(); st.banner.image = n; }
+  st.banner.caption = clip(q.body.caption, 80);
+  await putSet(st); s.json(st);
 }));
 
 app.post('/api/test-notify', guard, wrap(async (q, s) => {
